@@ -1,6 +1,6 @@
-FROM centos:7.6.1810
+FROM centos:8
 
-ARG RELEASE_VERSION="2.6.1"
+ARG RELEASE_VERSION="3.0.0"
 
 # ------------------------------------------------------------------------------
 # - Import the RPM GPG keys for repositories
@@ -9,42 +9,28 @@ ARG RELEASE_VERSION="2.6.1"
 # - Install supervisor-stdout to allow output of services started by
 #  supervisord to be easily inspected with "docker logs".
 # ------------------------------------------------------------------------------
-RUN rpm --rebuilddb \
+
+
+RUN rpm --import \
+		https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official \
 	&& rpm --import \
-		http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-7 \
-	&& rpm --import \
-		https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7 \
-	&& rpm --import \
-		https://dl.iuscommunity.org/pub/ius/IUS-COMMUNITY-GPG-KEY \
+		https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8 \
 	&& yum -y install \
 			--setopt=tsflags=nodocs \
-			--disableplugin=fastestmirror \
-		centos-release-scl \
-		centos-release-scl-rh \
 		epel-release \
-		https://centos7.iuscommunity.org/ius-release.rpm \
 	&& yum -y install \
 			--setopt=tsflags=nodocs \
-			--disableplugin=fastestmirror \
-		inotify-tools-3.14-8.el7 \
-		openssh-clients-7.4p1-21.el7 \
-		openssh-server-7.4p1-21.el7 \
-		openssl-1.0.2k-19.el7 \
-		python-setuptools-0.9.8-7.el7 \
-		sudo-1.8.23-4.el7 \
-		yum-plugin-versionlock-1.1.31-52.el7 \
-	&& yum versionlock add \
 		inotify-tools \
-		openssh \
+		openssl \
 		openssh-server \
 		openssh-clients \
-		python-setuptools \
+		python3-pip \
 		sudo \
-		yum-plugin-versionlock \
+        && dnf install -y util-linux-user \
 	&& yum clean all \
-	&& easy_install \
-		'supervisor == 4.0.4' \
-		'supervisor-stdout == 0.1.1' \
+        && pip3 install \
+		supervisor \
+		'supervisor-stdout==0.1.1' \
 	&& mkdir -p \
 		/var/log/supervisor/ \
 	&& rm -rf /etc/ld.so.cache \
@@ -89,6 +75,16 @@ RUN ln -sf \
 		/etc/{supervisord.conf,supervisord.d/{20-sshd-bootstrap,50-sshd-wrapper}.conf} \
 	&& chmod 700 \
 		/usr/{bin/healthcheck,sbin/{scmi,sshd-{bootstrap,wrapper},system-{timezone,timezone-wrapper}}}
+
+
+# Workaround to fix outdated packages supervisor_stdout and sshd-bootstrap
+# Fix deprecated print statement in supervisor_stdout.py 
+RUN  sed -r -i "s/(.*)print(.*)/\1print\(\2\)/" \
+                /usr/local/lib/python3.6/site-packages/supervisor_stdout.py
+# Replace CentOS-7 method to generate_ssh_host_key by the current CentOS version (8.x)
+RUN version=$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}") \
+	&& sed -r -i "s/(.*)(7\))$/\1$version)/" /usr/sbin/sshd-bootstrap
+
 
 EXPOSE 22
 
@@ -153,4 +149,4 @@ HEALTHCHECK \
 	--retries=5 \
 	CMD ["/usr/bin/healthcheck"]
 
-CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]
+CMD ["/usr/local/bin/supervisord", "--configuration=/etc/supervisord.conf"]
