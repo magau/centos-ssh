@@ -20,16 +20,24 @@ RUN rpm --import \
 		epel-release \
 	&& yum -y install \
 			--setopt=tsflags=nodocs \
-		inotify-tools \
-		openssl \
-		openssh-server \
-		openssh-clients \
-		python3-pip \
-		sudo \
-        && dnf install -y util-linux-user \
+        inotify-tools-3.14-19.el8.x86_64 \
+        openssh-clients-8.0p1-4.el8_1.x86_64 \
+        openssh-server-8.0p1-4.el8_1.x86_64 \
+        openssl-1:1.1.1c-15.el8.x86_64 \
+        python3-pip-9.0.3-16.el8.noarch \
+        sudo-1.8.29-5.el8.x86_64 \
+        fipscheck-1.5.0-4.el8.x86_64 \
+        fipscheck-lib-1.5.0-4.el8.x86_64 \
+        libedit-3.1-23.20170329cvs.el8.x86_64 \
+        openssh-8.0p1-4.el8_1.x86_64 \
+        platform-python-pip-9.0.3-16.el8.noarch \
+        python3-setuptools-39.2.0-5.el8.noarch \
+        python36-3.6.8-2.module_el8.1.0+245+c39af44f.x86_64 \
+        libuser-0.62-23.el8.x86_64 \
+        util-linux-user-2.32.1-22.el8.x86_64 \
 	&& yum clean all \
         && pip3 install \
-		supervisor \
+		'supervisor==4.2.1' \
 		'supervisor-stdout==0.1.1' \
 	&& mkdir -p \
 		/var/log/supervisor/ \
